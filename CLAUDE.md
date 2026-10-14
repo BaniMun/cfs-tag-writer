@@ -14,7 +14,7 @@ encrypted payload.
 ## Development Commands
 - Build the `.fap`: `source .venv/bin/activate && ufbt`
 - Build, install, and run on a connected Flipper: `ufbt launch`
-- No host-side test suite. Verify on hardware with `ufbt launch` plus the in-app
+- Verify on hardware with `ufbt launch` plus the in-app
   Settings > Self-Test scene (crypto + data round-trip). RPC screen-capture
   tooling exists but is maintainer-local, not in the repo.
 
@@ -45,9 +45,12 @@ include path for external apps — this is not an `application.fam` setting.
   automatically — every entry point into the write wizard must set all of them,
   or a missed assignment silently reuses stale state (this has caused real bugs).
 - Filament identity is catalog-driven: `cfs_data.c`'s `cfs_catalog[]` (keyed by
-  the 5-char id) is the source of truth for brand/name/material on read and
-  write. The older `CfsFilamentType` enum is a read-side legacy fallback only —
-  don't route new write logic through it.
+  the 5-char id) is the built-in source of truth for brand/name/material on read
+  and write. It is generated from an external Creality `material_database.json`
+  by `scripts/update_material_catalog.py`. Never hand-edit the generated region;
+  see `scripts/README.md` for update and validation commands. The older
+  `CfsFilamentType` enum is a read-side legacy fallback only; don't route new
+  write logic through it.
 - The AES keys / MIFARE access bits in `cfs_crypto.c` are copied verbatim from
   public Creality-ecosystem reference material, not a secret this app protects.
 

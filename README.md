@@ -70,6 +70,16 @@ ufbt            # build the .fap
 ufbt launch     # build, install, and run on a connected Flipper
 ```
 
+## Updating material data
+
+The built-in material catalog is generated from Creality's external
+`material_database.json` using the standard-library Python script
+[`scripts/update_material_catalog.py`](scripts/update_material_catalog.py).
+It updates the generated catalog region in `src/data/cfs_data.c`.
+For preview, update, and validation commands see
+[`scripts/README.md`](scripts/README.md). The JSON itself is not included in
+this repository.
+
 ## License
 
 [MIT](LICENSE) © 2026 P. Schattenberg

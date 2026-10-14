@@ -18,7 +18,7 @@ void cfs_scene_about_on_enter(void* context) {
         "\n"
         "MIT License\n"
         "by P. Schattenberg\n"
-        "v1.0";
+        "v1.0.1";
     widget_add_text_scroll_element(widget, 0, 16, 128, 48, text);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewWidget);
