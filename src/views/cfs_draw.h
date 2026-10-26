@@ -68,7 +68,7 @@ typedef struct {
     CfsStatusKind kind;
     char title[24];
     char text[64]; // up to 3 lines, '\n' separated
-    uint8_t frame; // animation frame while working
+    uint16_t frame; // animation frame while working
     bool winding; // working spool winds up filament (write) instead of just turning
     bool has_color; // draw the spool in this color (else an outline spool)
     uint8_t r, g, b;

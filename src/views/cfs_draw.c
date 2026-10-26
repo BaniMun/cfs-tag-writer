@@ -232,21 +232,22 @@ void cfs_draw_status(Canvas* canvas, const CfsStatusModel* m) {
     const int32_t cx = 19, cy = 28, rad = 17;
 
     if(m->kind == CfsStatusWorking) {
-        const uint8_t angle = m->frame % CFS_SPOOL_STEPS;
+        // one turn step every 2 frames
+        const uint8_t angle = (m->frame / 2) % CFS_SPOOL_STEPS;
         uint8_t fill = 255;
         if(m->winding) {
-            // wind up over 32 frames, stay full for 6, start over
-            const uint8_t phase = m->frame % 38;
-            fill = phase < 32 ? (uint8_t)(phase * 255 / 31) : 255;
+            // wind up over 36 frames, stay full for 8, start over
+            const uint8_t phase = m->frame % 44;
+            fill = phase < 36 ? (uint8_t)(phase * 255 / 35) : 255;
         }
         if(m->has_color) {
             cfs_draw_spool_anim(canvas, cx, cy, rad, m->r, m->g, m->b, angle, fill);
         } else {
             cfs_draw_spool_anim(canvas, cx, cy, rad, 0xFF, 0xFF, 0xFF, angle, fill);
         }
-        // waves grow over three steps, then pause for one (a step is 2 frames)
+        // waves grow over three steps, then pause for one (a step is 3 frames)
         static const Icon* const waves[] = {&I_Waves1_9x15, &I_Waves2_9x15, &I_Waves3_9x15};
-        const uint8_t w = (m->frame / 2) % 4;
+        const uint8_t w = (m->frame / 3) % 4;
         if(w < 3) canvas_draw_icon(canvas, 39, cy - 7, waves[w]);
     } else {
         canvas_draw_disc(canvas, cx, cy, rad);

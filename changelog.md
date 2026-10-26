@@ -1,3 +1,10 @@
+## v1.3.1
+
+- Slower animations (one frame every 180 ms, the working spool turns once
+  every ~4 s and winds up over ~6 s).
+- The main menu spool no longer turns by itself: it works like a dial and
+  turns a little with each move up or down.
+
 ## v1.3.0
 
 - The spool moves: it winds up filament while a tag is being written, turns

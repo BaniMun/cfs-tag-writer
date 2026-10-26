@@ -4,7 +4,7 @@
 #include <gui/elements.h>
 
 #define CFS_SCREEN_MENU_MAX (12)
-#define CFS_SCREEN_ANIM_MS  (120)
+#define CFS_SCREEN_ANIM_MS  (180)
 
 typedef enum {
     CfsScreenModeNone,
@@ -25,7 +25,7 @@ typedef struct {
     CfsCardModel card;
     CfsStatusModel status;
     uint8_t ticks; // animation ticks in the current mode
-    int8_t spin_left; // picker: steps of the short turn after a move (sign = direction)
+    int8_t spin_left; // menu / picker: steps of the turn after a move (sign = direction)
 } CfsScreenModel;
 
 struct CfsScreen {
@@ -118,10 +118,13 @@ static bool cfs_screen_input_menu(CfsScreen* screen, CfsScreenModel* m, InputEve
     if(menu->count == 0) return false;
     if((e->type == InputTypeShort || e->type == InputTypeRepeat) &&
        (e->key == InputKeyUp || e->key == InputKeyDown)) {
+        // The logo spool works like a dial: each move turns it a bit.
         if(e->key == InputKeyUp) {
             menu->selected = menu->selected ? menu->selected - 1 : menu->count - 1;
+            m->spin_left = -2;
         } else {
             menu->selected = (menu->selected + 1) % menu->count;
+            m->spin_left = 2;
         }
         if(menu->selected < menu->window) menu->window = menu->selected;
         if(menu->selected >= menu->window + CFS_MENU_ROWS)
@@ -146,17 +149,17 @@ static bool cfs_screen_input_picker(CfsScreen* screen, CfsScreenModel* m, InputE
         } else {
             m->picker_page = (m->picker_page + 1) % CFS_PICKER_PAGE_COUNT;
         }
-        m->spin_left = e->key == InputKeyLeft ? -6 : 6;
+        m->spin_left = e->key == InputKeyLeft ? -4 : 4;
         cfs_picker_load(m);
         return true;
     }
     if(press && (e->key == InputKeyUp || e->key == InputKeyDown) && p->kind == CfsPickerList) {
         if(e->key == InputKeyUp) {
             p->selected = p->selected ? p->selected - 1 : p->count - 1;
-            m->spin_left = -4;
+            m->spin_left = -3;
         } else {
             p->selected = (p->selected + 1) % p->count;
-            m->spin_left = 4;
+            m->spin_left = 3;
         }
         cfs_picker_load(m);
         return true;
@@ -220,8 +223,22 @@ static bool cfs_screen_input(InputEvent* event, void* context) {
     return consumed;
 }
 
-// Spool animation: the menu logo turns slowly, the picker spool makes a short
-// turn after each move, the working spool turns (and winds) all the time.
+// Spool animation: the menu and picker spools make a short turn after each
+// move, the working spool turns (and winds) all the time.
+static bool cfs_screen_spin(int8_t* left, uint8_t* angle) {
+    if(*left > 0) {
+        *angle = (*angle + 1) % CFS_SPOOL_STEPS;
+        (*left)--;
+        return true;
+    }
+    if(*left < 0) {
+        *angle = (*angle + CFS_SPOOL_STEPS - 1) % CFS_SPOOL_STEPS;
+        (*left)++;
+        return true;
+    }
+    return false;
+}
+
 static void cfs_screen_anim_tick(void* context) {
     CfsScreen* screen = context;
     bool redraw = false;
@@ -232,21 +249,10 @@ static void cfs_screen_anim_tick(void* context) {
             m->ticks++;
             switch(m->mode) {
             case CfsScreenModeMenu:
-                if(m->ticks % 3 == 0) {
-                    m->menu.angle = (m->menu.angle + 1) % CFS_SPOOL_STEPS;
-                    redraw = true;
-                }
+                redraw = cfs_screen_spin(&m->spin_left, &m->menu.angle);
                 break;
             case CfsScreenModePicker:
-                if(m->spin_left > 0) {
-                    m->picker.angle = (m->picker.angle + 1) % CFS_SPOOL_STEPS;
-                    m->spin_left--;
-                    redraw = true;
-                } else if(m->spin_left < 0) {
-                    m->picker.angle = (m->picker.angle + CFS_SPOOL_STEPS - 1) % CFS_SPOOL_STEPS;
-                    m->spin_left++;
-                    redraw = true;
-                }
+                redraw = cfs_screen_spin(&m->spin_left, &m->picker.angle);
                 break;
             case CfsScreenModeStatus:
                 if(m->status.kind == CfsStatusWorking) {
@@ -336,6 +342,7 @@ void cfs_screen_show_menu(
                                  m->menu.selected + 1 - CFS_MENU_ROWS :
                                  0;
             m->ticks = 0;
+            m->spin_left = 0;
         },
         true);
     cfs_screen_start_anim(screen);
