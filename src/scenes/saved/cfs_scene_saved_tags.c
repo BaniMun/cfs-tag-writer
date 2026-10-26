@@ -1,5 +1,5 @@
 #include "src/core/cfs_app_i.h"
-#include "cfs_tag_writer_icons.h"
+#include "cfs_tag_writer_plus_icons.h"
 
 // "Saved Tags" opens Flipper's file browser so the user can navigate the
 // filesystem and pick any .nfc dump — not just files in the app's own folder.

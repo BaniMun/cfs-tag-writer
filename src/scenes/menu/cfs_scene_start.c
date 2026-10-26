@@ -1,5 +1,5 @@
 #include "src/core/cfs_app_i.h"
-#include <cfs_tag_writer_icons.h>
+#include <cfs_tag_writer_plus_icons.h>
 
 // Ids are based off CfsCustomEventMenuBase (cfs_app_i.h), which sits past the
 // worker-event range so a stray worker event queued during teardown can't alias

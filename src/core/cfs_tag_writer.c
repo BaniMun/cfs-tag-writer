@@ -62,6 +62,7 @@ static CfsApp* cfs_app_alloc(void) {
     app->worker = cfs_nfc_worker_alloc();
     cfs_nfc_worker_set_callback(app->worker, cfs_worker_callback, app);
 
+    cfs_storage_import_original(app->storage);
     cfs_storage_ensure_dir(app->storage);
     cfs_settings_load(app->storage, &app->settings);
 

@@ -19,6 +19,11 @@ extern "C" {
 /** Ensure the app's tag storage directory exists. */
 void cfs_storage_ensure_dir(Storage* storage);
 
+// First run only: copy saved tags and settings from the original CFS Tag
+// Writer (apps_data/cfs_tag_writer), so they show up here too. Copies, never
+// moves: the original app keeps working alongside this one.
+void cfs_storage_import_original(Storage* storage);
+
 /**
  * Save a tag as a Flipper MIFARE Classic 1K .nfc dump under CFS_STORAGE_DIR
  * using the given base name (without extension).

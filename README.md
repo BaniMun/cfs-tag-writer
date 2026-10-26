@@ -1,4 +1,4 @@
-# CFS Tag Writer
+# CFS Tag Writer+
 
 Read, write, clone, and erase CFS filament spool NFC tags on the Flipper.
 
@@ -16,9 +16,10 @@ writable MIFARE Classic 1K tag, so a blank/generic 1K tag works as the medium.
 > "Creality" is used only to describe tag compatibility and the spool brand;
 > this app is not affiliated with or endorsed by Creality.
 
-> **About this fork:** this is a fork of
-> [pwschattenberg/cfs-tag-writer](https://github.com/pwschattenberg/cfs-tag-writer)
-> that adds a color picker with 240 named shades grouped by family (v1.1.0) and
+> **About this fork:** CFS Tag Writer+ (app id `cfs_tag_writer_plus`) is a fork
+> of [pwschattenberg/cfs-tag-writer](https://github.com/pwschattenberg/cfs-tag-writer)
+> and can be installed next to the original; on first run it copies over the
+> original's saved tags and settings. It adds a color picker with 240 named shades grouped by family (v1.1.0) and
 > redrawn screens (v1.2.0): a main menu with icons, a one-screen color picker,
 > a spool card for confirm and read results, animated read / write / erase
 > screens, and Retry after a failed operation. See [changelog.md](changelog.md).

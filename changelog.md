@@ -1,3 +1,10 @@
+## v1.4
+
+- Published as its own app, CFS Tag Writer+ (app id cfs_tag_writer_plus), a
+  fork of CFS Tag Writer by P. Schattenberg. Versions now use major.minor.
+- On first run, saved tags and settings from the original CFS Tag Writer are
+  copied over; the original app keeps its own copy and keeps working.
+
 ## v1.3.1
 
 - Slower animations (one frame every 180 ms, the working spool turns once

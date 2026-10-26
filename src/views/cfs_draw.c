@@ -7,7 +7,7 @@
 #include "sim.h"
 #else
 #include <gui/elements.h>
-#include <cfs_tag_writer_icons.h>
+#include <cfs_tag_writer_plus_icons.h>
 #endif
 
 // ---- helpers ----

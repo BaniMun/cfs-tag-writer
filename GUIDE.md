@@ -1,4 +1,4 @@
-# CFS Tag Writer — User Guide
+# CFS Tag Writer+ — User Guide
 
 A step-by-step walkthrough of every workflow. For an overview and install
 instructions, see [README.md](README.md).

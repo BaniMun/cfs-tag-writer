@@ -28,6 +28,40 @@ void cfs_storage_ensure_dir(Storage* storage) {
     storage_simply_mkdir(storage, CFS_STORAGE_DIR);
 }
 
+#define CFS_ORIGINAL_DIR      EXT_PATH("apps_data/cfs_tag_writer")
+#define CFS_ORIGINAL_TAGS     CFS_ORIGINAL_DIR "/tags"
+#define CFS_ORIGINAL_SETTINGS CFS_ORIGINAL_DIR "/settings"
+
+void cfs_storage_import_original(Storage* storage) {
+    furi_assert(storage);
+    // This app's tags folder only goes missing before the very first run.
+    if(storage_dir_exists(storage, CFS_STORAGE_DIR)) return;
+    storage_simply_mkdir(storage, CFS_STORAGE_DIR);
+
+    if(storage_file_exists(storage, CFS_ORIGINAL_SETTINGS) &&
+       !storage_file_exists(storage, APP_DATA_PATH("settings"))) {
+        storage_common_copy(storage, CFS_ORIGINAL_SETTINGS, APP_DATA_PATH("settings"));
+    }
+
+    File* dir = storage_file_alloc(storage);
+    if(storage_dir_open(dir, CFS_ORIGINAL_TAGS)) {
+        FileInfo info;
+        char name[CFS_STORAGE_NAME_MAX + 8];
+        FuriString* src = furi_string_alloc();
+        FuriString* dst = furi_string_alloc();
+        while(storage_dir_read(dir, &info, name, sizeof(name))) {
+            if(file_info_is_dir(&info)) continue;
+            furi_string_printf(src, "%s/%s", CFS_ORIGINAL_TAGS, name);
+            furi_string_printf(dst, "%s/%s", CFS_STORAGE_DIR, name);
+            storage_common_copy(storage, furi_string_get_cstr(src), furi_string_get_cstr(dst));
+        }
+        furi_string_free(src);
+        furi_string_free(dst);
+    }
+    storage_dir_close(dir);
+    storage_file_free(dir);
+}
+
 // Build the on-disk path for a saved dump from its base name (adds the dir and
 // extension). Shared by save and the exists-check so the layout lives in one place.
 static void cfs_storage_record_path(const char* name, char* out, size_t out_size) {

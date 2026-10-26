@@ -5,7 +5,7 @@ void cfs_scene_about_on_enter(void* context) {
     Widget* widget = app->widget;
     widget_reset(widget);
 
-    widget_add_string_element(widget, 64, 2, AlignCenter, AlignTop, FontPrimary, "CFS Tag Writer");
+    widget_add_string_element(widget, 64, 2, AlignCenter, AlignTop, FontPrimary, "CFS Tag Writer+");
 
     const char* text =
         "Read, write & clone\n"
@@ -17,8 +17,9 @@ void cfs_scene_about_on_enter(void* context) {
         "Clone only your own tags.\n"
         "\n"
         "MIT License\n"
-        "by P. Schattenberg\n"
-        "v1.0.1";
+        "by BaniMun, v1.4\n"
+        "Based on CFS Tag Writer\n"
+        "by P. Schattenberg";
     widget_add_text_scroll_element(widget, 0, 16, 128, 48, text);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewWidget);
