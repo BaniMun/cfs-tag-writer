@@ -16,6 +16,12 @@ writable MIFARE Classic 1K tag, so a blank/generic 1K tag works as the medium.
 > "Creality" is used only to describe tag compatibility and the spool brand;
 > this app is not affiliated with or endorsed by Creality.
 
+> **About this fork:** this is a fork of
+> [pwschattenberg/cfs-tag-writer](https://github.com/pwschattenberg/cfs-tag-writer)
+> that adds a color picker by family (v1.1.0): pick a hue family first, then
+> one of 240 named shades sorted light → dark. The classic palette and custom
+> hex input are still there. See [changelog.md](changelog.md) for details.
+
 ![Main menu](images/00_main_menu.png)
 
 ## Features

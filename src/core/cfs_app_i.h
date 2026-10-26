@@ -105,6 +105,7 @@ typedef struct {
 
     // Scratch buffers for input views.
     uint8_t color_bytes[3];
+    uint8_t shade_family; // color picker: family being browsed (CFS_SHADE_FAMILY_*)
     int32_t number_value;
     char text_scratch[64];
 

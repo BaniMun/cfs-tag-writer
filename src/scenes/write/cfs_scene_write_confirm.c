@@ -1,4 +1,5 @@
 #include "src/core/cfs_app_i.h"
+#include "src/data/cfs_shades.h"
 
 static void cfs_confirm_button_callback(GuiButtonType result, InputType type, void* context) {
     CfsApp* app = context;
@@ -41,7 +42,14 @@ void cfs_scene_write_confirm_on_enter(void* context) {
         d->serial);
     widget_add_string_element(widget, 0, 26, AlignLeft, AlignTop, FontSecondary, line);
 
-    snprintf(line, sizeof(line), "Color #%02X%02X%02X", d->color_r, d->color_g, d->color_b);
+    snprintf(
+        line,
+        sizeof(line),
+        "#%02X%02X%02X %s",
+        d->color_r,
+        d->color_g,
+        d->color_b,
+        cfs_color_nearest_name(d->color_r, d->color_g, d->color_b));
     widget_add_string_element(widget, 0, 37, AlignLeft, AlignTop, FontSecondary, line);
 
     widget_add_button_element(widget, GuiButtonTypeLeft, "Save", cfs_confirm_button_callback, app);

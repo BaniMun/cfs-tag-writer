@@ -1,48 +1,57 @@
-name: "FAP: Build for multiple SDK sources"
-# This will build your app for dev and release channels on GitHub. 
-# It will also build your app every day to make sure it's up to date with the latest SDK changes.
-# See https://github.com/marketplace/actions/build-flipper-application-package-fap for more information
+name: "FAP: Build for Official, Momentum and Unleashed"
+# Builds the .fap against the release SDK of each firmware on every push to main,
+# on demand (Actions -> Run workflow), and daily to catch SDK API changes.
+# See https://github.com/marketplace/actions/build-flipper-application-package-fap
 
 on:
   push:
-    branches: 
+    branches:
       - main
   pull_request:
     branches:
       - main
-  schedule: 
+  workflow_dispatch:
+  schedule:
     - cron: "1 1 * * *"
 
 permissions:
   contents: read
-  id-token: write
-  attestations: write
 
 jobs:
   ufbt-build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - name: dev channel
-            sdk-channel: dev
-          - name: release channel
+          - name: Official
             sdk-channel: release
-    name: 'ufbt: Build for ${{ matrix.name }}'
+            sdk-index-url: ""
+          - name: Momentum
+            sdk-channel: release
+            sdk-index-url: https://up.momentum-fw.dev/firmware/directory.json
+          - name: Unleashed
+            sdk-channel: release
+            sdk-index-url: https://up.unleashedflip.com/directory.json
+    name: "ufbt: Build for ${{ matrix.name }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build with ufbt
+      - name: Build with ufbt (official SDK)
+        if: matrix.sdk-index-url == ''
         uses: flipperdevices/flipperzero-ufbt-action@v0.1
-        id: build-app
+        id: build-official
         with:
           sdk-channel: ${{ matrix.sdk-channel }}
-      - name: Generate Artifact Attestation
-        uses: actions/attest-build-provenance@v1
+      - name: Build with ufbt (custom firmware SDK)
+        if: matrix.sdk-index-url != ''
+        uses: flipperdevices/flipperzero-ufbt-action@v0.1
+        id: build-custom
         with:
-          subject-path: ${{ steps.build-app.outputs.fap-artifacts }}
+          sdk-channel: ${{ matrix.sdk-channel }}
+          sdk-index-url: ${{ matrix.sdk-index-url }}
       - name: Upload app artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-${{ steps.build-app.outputs.suffix }}
-          path: ${{ steps.build-app.outputs.fap-artifacts }}
+          name: cfs_tag_writer-${{ matrix.name }}-${{ steps.build-official.outputs.suffix || steps.build-custom.outputs.suffix }}
+          path: ${{ steps.build-official.outputs.fap-artifacts || steps.build-custom.outputs.fap-artifacts }}
