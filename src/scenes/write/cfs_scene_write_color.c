@@ -1,39 +1,67 @@
 #include "src/core/cfs_app_i.h"
 #include "src/data/cfs_shades.h"
 
-// Color step 1: pick a hue family. Items 0..CFS_SHADE_FAMILY_COUNT-1 are the
-// generated shade families, CFS_SHADE_FAMILY_BASIC is the classic named palette
-// (sized by the settings option), and the last item opens raw hex input.
-// The chosen family is browsed shade by shade in cfs_scene_write_color_shade.
+// Color step: one screen. Left/Right switch family (shade families, then the
+// basic palette, then custom hex), Up/Down move through the family's shades,
+// OK picks. Scene state keeps the last page and shade as (page << 8) | shade.
 
-#define CFS_COLOR_ITEM_CUSTOM (CFS_SHADE_FAMILY_BASIC + 1)
+static size_t cfs_color_basic_count(const CfsApp* app) {
+    return cfs_palette_count(app->settings.color_palette);
+}
+
+// Land on the pending color when it is one of the listed colors (stepping back
+// from the weight screen, or editing a tag), else on the last place used.
+static bool cfs_color_find(const CfsApp* app, size_t* page, size_t* shade) {
+    const CfsTagData* d = &app->pending;
+    const size_t basic = cfs_color_basic_count(app);
+    for(size_t p = 0; p < CFS_PICKER_PAGE_HEX; p++) {
+        const size_t count = p == CFS_PICKER_PAGE_BASIC ? basic : cfs_shade_families[p].count;
+        for(size_t i = 0; i < count; i++) {
+            const CfsColorPreset* c = cfs_picker_color_at(p, i, basic);
+            if(c->r == d->color_r && c->g == d->color_g && c->b == d->color_b) {
+                *page = p;
+                *shade = i;
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 void cfs_scene_write_color_on_enter(void* context) {
     CfsApp* app = context;
-    Submenu* submenu = app->submenu;
-    submenu_reset(submenu);
-    submenu_set_header(submenu, "Color");
-    for(uint32_t i = 0; i < CFS_SHADE_FAMILY_COUNT; i++) {
-        submenu_add_item(submenu, cfs_shade_families[i].name, i, cfs_submenu_send_index, app);
-    }
-    submenu_add_item(
-        submenu, "Basic colors", CFS_SHADE_FAMILY_BASIC, cfs_submenu_send_index, app);
-    submenu_add_item(
-        submenu, "Custom hex...", CFS_COLOR_ITEM_CUSTOM, cfs_submenu_send_index, app);
-    // Reopen on the family used last (also when stepping back from a shade).
-    submenu_set_selected_item(
-        submenu, scene_manager_get_scene_state(app->scene_manager, CfsSceneWriteColor));
-    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewSubmenu);
+    uint32_t state = scene_manager_get_scene_state(app->scene_manager, CfsSceneWriteColor);
+    size_t page = state >> 8;
+    size_t shade = state & 0xFF;
+    // The hex page is only reopened directly (back from hex input); otherwise
+    // prefer the page holding the pending color.
+    if(page != CFS_PICKER_PAGE_HEX) cfs_color_find(app, &page, &shade);
+    cfs_screen_show_picker(
+        app->screen,
+        page,
+        shade,
+        cfs_color_basic_count(app),
+        app->pending.color_r,
+        app->pending.color_g,
+        app->pending.color_b,
+        CfsCustomEventPickerPick,
+        CfsCustomEventPickerHex);
+    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewScreen);
 }
 
 bool cfs_scene_write_color_on_event(void* context, SceneManagerEvent event) {
     CfsApp* app = context;
     if(event.type != SceneManagerEventTypeCustom) return false;
-    if(event.event > CFS_COLOR_ITEM_CUSTOM) return false;
+    if(event.event != CfsCustomEventPickerPick && event.event != CfsCustomEventPickerHex) {
+        return false;
+    }
 
-    scene_manager_set_scene_state(app->scene_manager, CfsSceneWriteColor, event.event);
+    size_t page, shade;
+    cfs_screen_get_picker(app->screen, &page, &shade);
+    scene_manager_set_scene_state(
+        app->scene_manager, CfsSceneWriteColor, (uint32_t)((page << 8) | (shade & 0xFF)));
 
-    if(event.event == CFS_COLOR_ITEM_CUSTOM) {
+    if(event.event == CfsCustomEventPickerHex) {
         // Seed byte-input with the current pending color, so a picked shade
         // can be fine-tuned by hand.
         app->color_bytes[0] = app->pending.color_r;
@@ -41,13 +69,16 @@ bool cfs_scene_write_color_on_event(void* context, SceneManagerEvent event) {
         app->color_bytes[2] = app->pending.color_b;
         scene_manager_next_scene(app->scene_manager, CfsSceneWriteColorCustom);
     } else {
-        app->shade_family = (uint8_t)event.event;
-        scene_manager_next_scene(app->scene_manager, CfsSceneWriteColorShade);
+        const CfsColorPreset* c = cfs_picker_color_at(page, shade, cfs_color_basic_count(app));
+        app->pending.color_r = c->r;
+        app->pending.color_g = c->g;
+        app->pending.color_b = c->b;
+        scene_manager_next_scene(app->scene_manager, CfsSceneWriteWeight);
     }
     return true;
 }
 
 void cfs_scene_write_color_on_exit(void* context) {
     CfsApp* app = context;
-    submenu_reset(app->submenu);
+    cfs_screen_reset(app->screen);
 }

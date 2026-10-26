@@ -1,13 +1,14 @@
 #include "src/core/cfs_app_i.h"
+#include "src/core/cfs_ui.h"
+
+static void cfs_erase_start(CfsApp* app) {
+    cfs_ui_show_working(app, "Erasing", "Hold the tag to\nthe back of\nyour Flipper", NULL);
+    cfs_nfc_worker_start_erase(app->worker);
+}
 
 void cfs_scene_erase_progress_on_enter(void* context) {
     CfsApp* app = context;
-    popup_reset(app->popup);
-    popup_set_header(app->popup, "Erasing", 64, 8, AlignCenter, AlignTop);
-    popup_set_text(
-        app->popup, "Hold tag to the\nback of Flipper", 64, 34, AlignCenter, AlignCenter);
-    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewPopup);
-    cfs_nfc_worker_start_erase(app->worker);
+    cfs_erase_start(app);
 }
 
 bool cfs_scene_erase_progress_on_event(void* context, SceneManagerEvent event) {
@@ -16,19 +17,25 @@ bool cfs_scene_erase_progress_on_event(void* context, SceneManagerEvent event) {
 
     switch(event.event) {
     case CfsCustomEventWorkerSuccess:
-        cfs_app_finish_op_popup(app, "Done", "Tag erased", true);
+        cfs_ui_finish_op(app, true, "Tag erased", "It is blank now.");
+        return true;
+    case CfsCustomEventButtonRetry:
+        cfs_erase_start(app);
+        return true;
+    case CfsCustomEventScreenDone:
+        scene_manager_search_and_switch_to_previous_scene(app->scene_manager, CfsSceneStart);
         return true;
     case CfsCustomEventWorkerNotPresent:
-        cfs_app_finish_op_popup(app, "Erase Failed", "No tag detected", false);
+        cfs_ui_finish_op(app, false, "Erase failed", "No tag found.\nHold it flat on\nthe back.");
         return true;
     case CfsCustomEventWorkerWrongType:
-        cfs_app_finish_op_popup(app, "Erase Failed", "Not a 1K tag", false);
+        cfs_ui_finish_op(app, false, "Erase failed", "Not a MIFARE\nClassic 1K tag.");
         return true;
     case CfsCustomEventWorkerWriteFailed:
-        cfs_app_finish_op_popup(app, "Erase Failed", "Could not write.\nTag locked?", false);
+        cfs_ui_finish_op(app, false, "Erase failed", "Could not write.\nTag locked?");
         return true;
     case CfsCustomEventWorkerVerifyFailed:
-        cfs_app_finish_op_popup(app, "Verify Failed", "Read-back mismatch", false);
+        cfs_ui_finish_op(app, false, "Verify failed", "Read-back did\nnot match.");
         return true;
     default:
         return false;
@@ -38,7 +45,5 @@ bool cfs_scene_erase_progress_on_event(void* context, SceneManagerEvent event) {
 void cfs_scene_erase_progress_on_exit(void* context) {
     CfsApp* app = context;
     cfs_nfc_worker_stop(app->worker);
-    popup_disable_timeout(app->popup);
-    popup_set_callback(app->popup, NULL);
-    popup_reset(app->popup);
+    cfs_screen_reset(app->screen);
 }

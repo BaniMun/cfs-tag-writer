@@ -18,9 +18,10 @@ writable MIFARE Classic 1K tag, so a blank/generic 1K tag works as the medium.
 
 > **About this fork:** this is a fork of
 > [pwschattenberg/cfs-tag-writer](https://github.com/pwschattenberg/cfs-tag-writer)
-> that adds a color picker by family (v1.1.0): pick a hue family first, then
-> one of 240 named shades sorted light → dark. The classic palette and custom
-> hex input are still there. See [changelog.md](changelog.md) for details.
+> that adds a color picker with 240 named shades grouped by family (v1.1.0) and
+> redrawn screens (v1.2.0): a main menu with icons, a one-screen color picker,
+> a spool card for confirm and read results, animated read / write / erase
+> screens, and Retry after a failed operation. See [changelog.md](changelog.md).
 
 ![Main menu](images/00_main_menu.png)
 

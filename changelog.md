@@ -1,3 +1,17 @@
+## v1.2.0
+
+- New look: the app's main screens are drawn by the app itself instead of
+  plain text lists.
+- Main menu: spool logo on the left, list with icons on the right.
+- Color picker on one screen: Left/Right switch family (shade families, then
+  Basic colors, then Custom hex), Up/Down move through shades, OK picks. The
+  spool fills with a dither pattern showing how light or dark the color is.
+- Spool card for the write confirm screen and read results: material, brand,
+  color name, weight and length, serial.
+- Reading, writing and erasing show a spool with animated NFC waves; results
+  show a check or a cross. Failed reads, writes and erases offer Retry
+  instead of dropping back to the menu.
+
 ## v1.1.0
 
 - Color picker by family: pick a hue family (Reds, Greens, Whites & Grays, ...),

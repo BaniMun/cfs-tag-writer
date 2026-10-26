@@ -1,4 +1,5 @@
 #include "src/core/cfs_app_i.h"
+#include "src/core/cfs_ui.h"
 
 static bool cfs_custom_event_callback(void* context, uint32_t event) {
     furi_assert(context);
@@ -54,6 +55,9 @@ static CfsApp* cfs_app_alloc(void) {
         app->view_dispatcher,
         CfsViewVariableItemList,
         variable_item_list_get_view(app->variable_item_list));
+    app->screen = cfs_screen_alloc();
+    cfs_screen_set_callback(app->screen, cfs_ui_screen_callback, app);
+    view_dispatcher_add_view(app->view_dispatcher, CfsViewScreen, cfs_screen_get_view(app->screen));
 
     app->worker = cfs_nfc_worker_alloc();
     cfs_nfc_worker_set_callback(app->worker, cfs_worker_callback, app);
@@ -84,6 +88,8 @@ static void cfs_app_free(CfsApp* app) {
     text_input_free(app->text_input);
     view_dispatcher_remove_view(app->view_dispatcher, CfsViewVariableItemList);
     variable_item_list_free(app->variable_item_list);
+    view_dispatcher_remove_view(app->view_dispatcher, CfsViewScreen);
+    cfs_screen_free(app->screen);
 
     view_dispatcher_free(app->view_dispatcher);
     scene_manager_free(app->scene_manager);

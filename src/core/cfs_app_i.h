@@ -21,6 +21,7 @@
 #include "src/storage/cfs_storage.h"
 #include "src/settings/cfs_settings.h"
 #include "src/core/cfs_scene.h"
+#include "src/views/cfs_screen.h"
 
 typedef enum {
     CfsViewSubmenu,
@@ -30,6 +31,7 @@ typedef enum {
     CfsViewByteInput,
     CfsViewTextInput,
     CfsViewVariableItemList,
+    CfsViewScreen, // the app's own screens (src/views/cfs_screen.c)
 } CfsViewId;
 
 // The first 8 values mirror CfsNfcWorkerEvent order exactly, so the worker
@@ -55,6 +57,9 @@ typedef enum {
     CfsCustomEventButtonErase, // confirm erase
     CfsCustomEventButtonOverwrite, // confirm overwriting an existing saved record
     CfsCustomEventButtonDetails, // open the raw/details view from a read result
+    CfsCustomEventPickerPick, // color picker: OK on a shade / basic color
+    CfsCustomEventPickerHex, // color picker: OK on the custom hex page
+    CfsCustomEventScreenDone, // a finished operation's screen timed out
 
     // Start-menu item ids live in this same custom-event namespace (they're sent
     // via view_dispatcher_send_custom_event too). Based well past the worker
@@ -78,6 +83,7 @@ typedef struct {
     ByteInput* byte_input;
     TextInput* text_input;
     VariableItemList* variable_item_list;
+    CfsScreen* screen;
 
     CfsNfcWorker* worker;
     CfsSettings settings;
@@ -105,7 +111,6 @@ typedef struct {
 
     // Scratch buffers for input views.
     uint8_t color_bytes[3];
-    uint8_t shade_family; // color picker: family being browsed (CFS_SHADE_FAMILY_*)
     int32_t number_value;
     char text_scratch[64];
 
@@ -136,27 +141,6 @@ static inline void cfs_app_stage_write_from_loaded(CfsApp* app, bool write_exact
     app->write_exact = write_exact;
     app->pending_weight_index =
         cfs_nearest_weight_index(app->settings.weight_len, app->pending.length_m);
-}
-
-// Shared "operation finished" popup callback: return to the start menu.
-static inline void cfs_app_popup_done_callback(void* context) {
-    CfsApp* app = context;
-    scene_manager_search_and_switch_to_previous_scene(app->scene_manager, CfsSceneStart);
-}
-
-// Show a result popup (header/text), buzz success/error, and auto-return to
-// the start menu after a short timeout. Shared by the write and erase
-// progress scenes.
-static inline void
-    cfs_app_finish_op_popup(CfsApp* app, const char* header, const char* text, bool success) {
-    popup_reset(app->popup);
-    popup_set_header(app->popup, header, 64, 8, AlignCenter, AlignTop);
-    popup_set_text(app->popup, text, 64, 34, AlignCenter, AlignCenter);
-    popup_set_context(app->popup, app);
-    popup_set_callback(app->popup, cfs_app_popup_done_callback);
-    popup_set_timeout(app->popup, 1600);
-    popup_enable_timeout(app->popup);
-    notification_message(app->notifications, success ? &sequence_success : &sequence_error);
 }
 
 // Persist the staged record under app->save_name and buzz the result. Shared by

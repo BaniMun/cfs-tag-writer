@@ -42,7 +42,11 @@ current selection; press OK to advance.
 
    ![Material](images/05_write_material.png)
 
-3. **Color** — pick from the palette, or enter a custom color.
+3. **Color** — one screen: **Left/Right** switch the color family (Whites &
+   Grays, Reds, … Browns & Beiges, then Basic colors and Custom hex),
+   **Up/Down** move through its shades from light to dark, **OK** picks. The
+   spool fills with a dot pattern that shows how light or dark the shade is.
+   On the Custom hex page, OK opens hex input, starting from the current color.
 
    ![Color](images/06_write_color.png)
 
@@ -51,12 +55,14 @@ current selection; press OK to advance.
 
    ![Weight](images/07_write_weight.png)
 
-5. **Confirm** — review everything, then **Write** (or **x2** for both tags, or
-   **Save**).
+5. **Confirm** — the spool card shows material, brand, color, weight and
+   length, and serial. Press **Write** (or **x2** for both tags, or **Save**).
 
    ![Confirm](images/08_write_confirm.png)
 
-Hold the tag on the back when prompted; the app writes and verifies.
+Hold the tag on the back when prompted; the app writes and verifies. If it
+fails (no tag found, tag locked, read-back mismatch), press **Retry** to try
+the same tag again, or Back to return to the confirm screen.
 
 ![Done](images/10_write_done.png)
 

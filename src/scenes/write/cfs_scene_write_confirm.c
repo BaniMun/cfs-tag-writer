@@ -1,63 +1,20 @@
 #include "src/core/cfs_app_i.h"
-#include "src/data/cfs_shades.h"
-
-static void cfs_confirm_button_callback(GuiButtonType result, InputType type, void* context) {
-    CfsApp* app = context;
-    if(type != InputTypeShort) return;
-    switch(result) {
-    case GuiButtonTypeLeft:
-        view_dispatcher_send_custom_event(app->view_dispatcher, CfsCustomEventButtonSave);
-        break;
-    case GuiButtonTypeCenter:
-        view_dispatcher_send_custom_event(app->view_dispatcher, CfsCustomEventButtonWrite);
-        break;
-    case GuiButtonTypeRight:
-        view_dispatcher_send_custom_event(app->view_dispatcher, CfsCustomEventButtonWriteDual);
-        break;
-    default:
-        break;
-    }
-}
+#include "src/core/cfs_ui.h"
 
 void cfs_scene_write_confirm_on_enter(void* context) {
     CfsApp* app = context;
-    Widget* widget = app->widget;
-    const CfsTagData* d = &app->pending;
-    widget_reset(widget);
-
-    char line[48];
-    widget_add_string_element(widget, 0, 1, AlignLeft, AlignTop, FontPrimary, "Confirm Write");
-
-    // Brand + material label (catalog-driven, brand-deduped). filament_type is
-    // often Unknown for catalog ids, so it must not drive the display directly.
-    cfs_brand_material_label(d, line, sizeof(line));
-    widget_add_string_element(widget, 0, 15, AlignLeft, AlignTop, FontSecondary, line);
-
-    snprintf(
-        line,
-        sizeof(line),
-        "%s (%um)  SN %s",
-        cfs_weight_label(app->pending_weight_index),
-        d->length_m,
-        d->serial);
-    widget_add_string_element(widget, 0, 26, AlignLeft, AlignTop, FontSecondary, line);
-
-    snprintf(
-        line,
-        sizeof(line),
-        "#%02X%02X%02X %s",
-        d->color_r,
-        d->color_g,
-        d->color_b,
-        cfs_color_nearest_name(d->color_r, d->color_g, d->color_b));
-    widget_add_string_element(widget, 0, 37, AlignLeft, AlignTop, FontSecondary, line);
-
-    widget_add_button_element(widget, GuiButtonTypeLeft, "Save", cfs_confirm_button_callback, app);
-    widget_add_button_element(
-        widget, GuiButtonTypeCenter, "Write", cfs_confirm_button_callback, app);
-    widget_add_button_element(widget, GuiButtonTypeRight, "x2", cfs_confirm_button_callback, app);
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewWidget);
+    CfsCardModel card;
+    cfs_ui_fill_card(&app->pending, app->pending_weight_index, &card);
+    card.button_left = "Save";
+    card.button_center = "Write";
+    card.button_right = "x2";
+    cfs_screen_show_card(
+        app->screen,
+        &card,
+        CfsCustomEventButtonSave,
+        CfsCustomEventButtonWrite,
+        CfsCustomEventButtonWriteDual);
+    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewScreen);
 }
 
 bool cfs_scene_write_confirm_on_event(void* context, SceneManagerEvent event) {
@@ -81,5 +38,5 @@ bool cfs_scene_write_confirm_on_event(void* context, SceneManagerEvent event) {
 
 void cfs_scene_write_confirm_on_exit(void* context) {
     CfsApp* app = context;
-    widget_reset(app->widget);
+    cfs_screen_reset(app->screen);
 }

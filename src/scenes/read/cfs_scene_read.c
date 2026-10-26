@@ -1,4 +1,5 @@
 #include "src/core/cfs_app_i.h"
+#include "src/core/cfs_ui.h"
 
 static void cfs_read_capture_result(CfsApp* app) {
     const CfsTagData* d = cfs_nfc_worker_get_tag_data(app->worker);
@@ -15,21 +16,18 @@ static void cfs_read_capture_result(CfsApp* app) {
 }
 
 static void cfs_read_show_error(CfsApp* app, const char* text) {
-    popup_reset(app->popup);
-    popup_set_header(app->popup, "Read Failed", 64, 8, AlignCenter, AlignTop);
-    popup_set_text(app->popup, text, 64, 34, AlignCenter, AlignCenter);
-    notification_message(app->notifications, &sequence_error);
+    cfs_ui_finish_op(app, false, "Read failed", text);
+}
+
+static void cfs_read_start(CfsApp* app) {
+    cfs_ui_show_working(app, "Reading", "Hold a CFS tag\nto the back of\nyour Flipper", NULL);
+    cfs_nfc_worker_start_read(app->worker);
 }
 
 void cfs_scene_read_on_enter(void* context) {
     CfsApp* app = context;
     app->result_read_only = false; // this is a live read
-    popup_reset(app->popup);
-    popup_set_header(app->popup, "Reading", 64, 8, AlignCenter, AlignTop);
-    popup_set_text(
-        app->popup, "Hold a CFS tag to\nthe back of Flipper", 64, 34, AlignCenter, AlignCenter);
-    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewPopup);
-    cfs_nfc_worker_start_read(app->worker);
+    cfs_read_start(app);
 }
 
 bool cfs_scene_read_on_event(void* context, SceneManagerEvent event) {
@@ -48,8 +46,11 @@ bool cfs_scene_read_on_event(void* context, SceneManagerEvent event) {
         app->is_blank = true;
         scene_manager_next_scene(app->scene_manager, CfsSceneReadResult);
         return true;
+    case CfsCustomEventButtonRetry:
+        cfs_read_start(app);
+        return true;
     case CfsCustomEventWorkerNotPresent:
-        cfs_read_show_error(app, "No tag detected.\nPress Back to retry.");
+        cfs_read_show_error(app, "No tag found.\nHold it flat on\nthe back.");
         return true;
     case CfsCustomEventWorkerWrongType:
         cfs_read_show_error(app, "Not a MIFARE\nClassic 1K tag.");
@@ -58,7 +59,7 @@ bool cfs_scene_read_on_event(void* context, SceneManagerEvent event) {
         cfs_read_show_error(app, "Auth failed.\nNot a CFS tag?");
         return true;
     case CfsCustomEventWorkerReadFailed:
-        cfs_read_show_error(app, "Decrypt/parse\nfailed.");
+        cfs_read_show_error(app, "Could not decode\nthe tag data.");
         return true;
     default:
         return false;
@@ -68,5 +69,5 @@ bool cfs_scene_read_on_event(void* context, SceneManagerEvent event) {
 void cfs_scene_read_on_exit(void* context) {
     CfsApp* app = context;
     cfs_nfc_worker_stop(app->worker);
-    popup_reset(app->popup);
+    cfs_screen_reset(app->screen);
 }

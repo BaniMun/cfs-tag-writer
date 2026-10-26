@@ -1,4 +1,5 @@
 #include "src/core/cfs_app_i.h"
+#include <cfs_tag_writer_icons.h>
 
 // Ids are based off CfsCustomEventMenuBase (cfs_app_i.h), which sits past the
 // worker-event range so a stray worker event queued during teardown can't alias
@@ -13,21 +14,34 @@ typedef enum {
     StartItemAbout,
 } StartItem;
 
+static const CfsMenuItem start_items[] = {
+    {&I_MenuRead_10x10, "Read Tag"},
+    {&I_MenuWrite_10x10, "Write Tag"},
+    {&I_MenuErase_10x10, "Erase Tag"},
+    {&I_MenuSaved_10x10, "Saved Tags"},
+    {&I_MenuSettings_10x10, "Settings"},
+    {&I_MenuHelp_10x10, "Help"},
+    {&I_MenuAbout_10x10, "About"},
+};
+
+static const uint32_t start_events[] = {
+    StartItemRead,
+    StartItemWrite,
+    StartItemErase,
+    StartItemSaved,
+    StartItemSettings,
+    StartItemHelp,
+    StartItemAbout,
+};
+
 void cfs_scene_start_on_enter(void* context) {
     CfsApp* app = context;
-    Submenu* submenu = app->submenu;
-    submenu_reset(submenu);
-    submenu_set_header(submenu, "CFS Tag Writer");
-    submenu_add_item(submenu, "Read Tag", StartItemRead, cfs_submenu_send_index, app);
-    submenu_add_item(submenu, "Write Tag", StartItemWrite, cfs_submenu_send_index, app);
-    submenu_add_item(submenu, "Erase Tag", StartItemErase, cfs_submenu_send_index, app);
-    submenu_add_item(submenu, "Saved Tags", StartItemSaved, cfs_submenu_send_index, app);
-    submenu_add_item(submenu, "Settings", StartItemSettings, cfs_submenu_send_index, app);
-    submenu_add_item(submenu, "Help", StartItemHelp, cfs_submenu_send_index, app);
-    submenu_add_item(submenu, "About", StartItemAbout, cfs_submenu_send_index, app);
-    submenu_set_selected_item(
-        submenu, scene_manager_get_scene_state(app->scene_manager, CfsSceneStart));
-    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewSubmenu);
+    // Scene state holds the last chosen item id; reopen on it.
+    uint32_t state = scene_manager_get_scene_state(app->scene_manager, CfsSceneStart);
+    size_t selected = state >= StartItemRead ? state - StartItemRead : 0;
+    cfs_screen_show_menu(
+        app->screen, start_items, start_events, COUNT_OF(start_items), selected);
+    view_dispatcher_switch_to_view(app->view_dispatcher, CfsViewScreen);
 }
 
 bool cfs_scene_start_on_event(void* context, SceneManagerEvent event) {
@@ -75,5 +89,5 @@ bool cfs_scene_start_on_event(void* context, SceneManagerEvent event) {
 
 void cfs_scene_start_on_exit(void* context) {
     CfsApp* app = context;
-    submenu_reset(app->submenu);
+    cfs_screen_reset(app->screen);
 }
