@@ -51,13 +51,28 @@ void cfs_draw_str_fit(Canvas* canvas, int32_t x, int32_t y, int32_t max_width, c
     canvas_draw_str(canvas, x, y, buf);
 }
 
+// cos() of the 12 spoke angles (30 degree steps), scaled by 64.
+static const int8_t cfs_cos12[CFS_SPOOL_STEPS] = {64, 55, 32, 0, -32, -55, -64, -55, -32, 0, 32, 55};
+#define CFS_SIN12(i) (cfs_cos12[((i) + 9) % CFS_SPOOL_STEPS])
+
 // A filament spool seen from the side: flange, filament wound in the spool's
-// color (as dither), hub and axle hole.
-void cfs_draw_spool(Canvas* canvas, int32_t cx, int32_t cy, int32_t radius, uint8_t r, uint8_t g, uint8_t b) {
+// color (as dither), hub with three spokes. angle turns the spokes (one step =
+// 30 degrees); fill below 255 shows a partly wound spool with the strand
+// coming in from the right.
+void cfs_draw_spool_anim(
+    Canvas* canvas,
+    int32_t cx,
+    int32_t cy,
+    int32_t radius,
+    uint8_t r,
+    uint8_t g,
+    uint8_t b,
+    uint8_t angle,
+    uint8_t fill) {
     const uint8_t luma = cfs_luma(r, g, b);
-    const int32_t wound_out = radius - 2;
+    const int32_t wound_full = radius - 2;
     const int32_t wound_in = radius * 9 / 20;
-    const int32_t hub = radius * 3 / 10;
+    const int32_t wound_out = wound_in - 1 + ((wound_full - (wound_in - 1)) * fill) / 255;
 
     canvas_set_color(canvas, ColorBlack);
     for(int32_t dy = -wound_out; dy <= wound_out; dy++) {
@@ -69,8 +84,26 @@ void cfs_draw_spool(Canvas* canvas, int32_t cx, int32_t cy, int32_t radius, uint
     }
     canvas_draw_circle(canvas, cx, cy, radius);
     canvas_draw_circle(canvas, cx, cy, wound_in - 1);
-    canvas_draw_circle(canvas, cx, cy, hub);
+    if(fill < 255) {
+        // outer edge of the filament so far, and the strand being pulled in
+        canvas_draw_circle(canvas, cx, cy, wound_out);
+        canvas_draw_line(canvas, cx, cy - wound_out, cx + radius + 3, cy - wound_out);
+    }
+    const int32_t spoke = wound_in - 2;
+    for(uint8_t k = 0; k < 3; k++) {
+        const uint8_t i = (angle + k * 4) % CFS_SPOOL_STEPS;
+        canvas_draw_line(
+            canvas,
+            cx,
+            cy,
+            cx + (cfs_cos12[i] * spoke) / 64,
+            cy + (CFS_SIN12(i) * spoke) / 64);
+    }
     canvas_draw_disc(canvas, cx, cy, 1);
+}
+
+void cfs_draw_spool(Canvas* canvas, int32_t cx, int32_t cy, int32_t radius, uint8_t r, uint8_t g, uint8_t b) {
+    cfs_draw_spool_anim(canvas, cx, cy, radius, r, g, b, 0, 255);
 }
 
 static void cfs_draw_buttons(Canvas* canvas, const char* left, const char* center, const char* right) {
@@ -89,7 +122,7 @@ void cfs_draw_menu(Canvas* canvas, const CfsMenuModel* m) {
     const int32_t w = 76;
 
     canvas_set_color(canvas, ColorBlack);
-    cfs_draw_spool(canvas, 21, 21, 18, 0x60, 0x60, 0x60);
+    cfs_draw_spool_anim(canvas, 21, 21, 18, 0x60, 0x60, 0x60, m->angle, 255);
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 21, 42, AlignCenter, AlignTop, "CFS");
     canvas_set_font(canvas, FontSecondary);
@@ -121,7 +154,7 @@ void cfs_draw_color_picker(Canvas* canvas, const CfsPickerModel* m) {
     canvas_draw_triangle(canvas, 4, 5, 7, 4, CanvasDirectionRightToLeft);
     canvas_draw_triangle(canvas, 123, 5, 7, 4, CanvasDirectionLeftToRight);
 
-    cfs_draw_spool(canvas, 19, 32, 17, m->r, m->g, m->b);
+    cfs_draw_spool_anim(canvas, 19, 32, 17, m->r, m->g, m->b, m->angle, 255);
 
     canvas_set_font(canvas, FontSecondary);
     if(m->kind == CfsPickerHex) {
@@ -199,14 +232,22 @@ void cfs_draw_status(Canvas* canvas, const CfsStatusModel* m) {
     const int32_t cx = 19, cy = 28, rad = 17;
 
     if(m->kind == CfsStatusWorking) {
-        if(m->has_color) {
-            cfs_draw_spool(canvas, cx, cy, rad, m->r, m->g, m->b);
-        } else {
-            cfs_draw_spool(canvas, cx, cy, rad, 0xFF, 0xFF, 0xFF);
+        const uint8_t angle = m->frame % CFS_SPOOL_STEPS;
+        uint8_t fill = 255;
+        if(m->winding) {
+            // wind up over 32 frames, stay full for 6, start over
+            const uint8_t phase = m->frame % 38;
+            fill = phase < 32 ? (uint8_t)(phase * 255 / 31) : 255;
         }
-        // waves grow over three frames, then pause for one
+        if(m->has_color) {
+            cfs_draw_spool_anim(canvas, cx, cy, rad, m->r, m->g, m->b, angle, fill);
+        } else {
+            cfs_draw_spool_anim(canvas, cx, cy, rad, 0xFF, 0xFF, 0xFF, angle, fill);
+        }
+        // waves grow over three steps, then pause for one (a step is 2 frames)
         static const Icon* const waves[] = {&I_Waves1_9x15, &I_Waves2_9x15, &I_Waves3_9x15};
-        if(m->frame % 4 < 3) canvas_draw_icon(canvas, 39, cy - 7, waves[m->frame % 4]);
+        const uint8_t w = (m->frame / 2) % 4;
+        if(w < 3) canvas_draw_icon(canvas, 39, cy - 7, waves[w]);
     } else {
         canvas_draw_disc(canvas, cx, cy, rad);
         canvas_set_color(canvas, ColorWhite);

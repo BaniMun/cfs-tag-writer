@@ -4,7 +4,7 @@
 #include <gui/elements.h>
 
 #define CFS_SCREEN_MENU_MAX (12)
-#define CFS_SCREEN_ANIM_MS  (280)
+#define CFS_SCREEN_ANIM_MS  (120)
 
 typedef enum {
     CfsScreenModeNone,
@@ -24,6 +24,8 @@ typedef struct {
     uint8_t hex_r, hex_g, hex_b;
     CfsCardModel card;
     CfsStatusModel status;
+    uint8_t ticks; // animation ticks in the current mode
+    int8_t spin_left; // picker: steps of the short turn after a move (sign = direction)
 } CfsScreenModel;
 
 struct CfsScreen {
@@ -144,14 +146,17 @@ static bool cfs_screen_input_picker(CfsScreen* screen, CfsScreenModel* m, InputE
         } else {
             m->picker_page = (m->picker_page + 1) % CFS_PICKER_PAGE_COUNT;
         }
+        m->spin_left = e->key == InputKeyLeft ? -6 : 6;
         cfs_picker_load(m);
         return true;
     }
     if(press && (e->key == InputKeyUp || e->key == InputKeyDown) && p->kind == CfsPickerList) {
         if(e->key == InputKeyUp) {
             p->selected = p->selected ? p->selected - 1 : p->count - 1;
+            m->spin_left = -4;
         } else {
             p->selected = (p->selected + 1) % p->count;
+            m->spin_left = 4;
         }
         cfs_picker_load(m);
         return true;
@@ -215,9 +220,49 @@ static bool cfs_screen_input(InputEvent* event, void* context) {
     return consumed;
 }
 
+// Spool animation: the menu logo turns slowly, the picker spool makes a short
+// turn after each move, the working spool turns (and winds) all the time.
 static void cfs_screen_anim_tick(void* context) {
     CfsScreen* screen = context;
-    with_view_model(screen->view, CfsScreenModel * m, { m->status.frame++; }, true);
+    bool redraw = false;
+    with_view_model(
+        screen->view,
+        CfsScreenModel * m,
+        {
+            m->ticks++;
+            switch(m->mode) {
+            case CfsScreenModeMenu:
+                if(m->ticks % 3 == 0) {
+                    m->menu.angle = (m->menu.angle + 1) % CFS_SPOOL_STEPS;
+                    redraw = true;
+                }
+                break;
+            case CfsScreenModePicker:
+                if(m->spin_left > 0) {
+                    m->picker.angle = (m->picker.angle + 1) % CFS_SPOOL_STEPS;
+                    m->spin_left--;
+                    redraw = true;
+                } else if(m->spin_left < 0) {
+                    m->picker.angle = (m->picker.angle + CFS_SPOOL_STEPS - 1) % CFS_SPOOL_STEPS;
+                    m->spin_left++;
+                    redraw = true;
+                }
+                break;
+            case CfsScreenModeStatus:
+                if(m->status.kind == CfsStatusWorking) {
+                    m->status.frame++;
+                    redraw = true;
+                }
+                break;
+            default:
+                break;
+            }
+        },
+        redraw);
+}
+
+static void cfs_screen_start_anim(CfsScreen* screen) {
+    furi_timer_start(screen->anim_timer, furi_ms_to_ticks(CFS_SCREEN_ANIM_MS));
 }
 
 static void cfs_screen_timeout(void* context) {
@@ -290,8 +335,10 @@ void cfs_screen_show_menu(
             m->menu.window = m->menu.selected >= CFS_MENU_ROWS ?
                                  m->menu.selected + 1 - CFS_MENU_ROWS :
                                  0;
+            m->ticks = 0;
         },
         true);
+    cfs_screen_start_anim(screen);
 }
 
 size_t cfs_screen_get_menu_selected(CfsScreen* screen) {
@@ -324,9 +371,12 @@ void cfs_screen_show_picker(
             m->hex_g = g;
             m->hex_b = b;
             m->picker.selected = selected;
+            m->spin_left = 0;
+            m->ticks = 0;
             cfs_picker_load(m);
         },
         true);
+    cfs_screen_start_anim(screen);
 }
 
 void cfs_screen_get_picker(CfsScreen* screen, size_t* page, size_t* selected) {
@@ -378,8 +428,6 @@ void cfs_screen_show_status(
             m->status.frame = 0;
         },
         true);
-    if(status->kind == CfsStatusWorking) {
-        furi_timer_start(screen->anim_timer, furi_ms_to_ticks(CFS_SCREEN_ANIM_MS));
-    }
+    if(status->kind == CfsStatusWorking) cfs_screen_start_anim(screen);
     if(timeout_ms) furi_timer_start(screen->timeout_timer, furi_ms_to_ticks(timeout_ms));
 }

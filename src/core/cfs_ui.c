@@ -38,8 +38,13 @@ void cfs_ui_fill_card(const CfsTagData* data, size_t weight_index, CfsCardModel*
     card->b = data->color_b;
 }
 
-void cfs_ui_show_working(CfsApp* app, const char* title, const char* text, const CfsTagData* color) {
-    CfsStatusModel status = {.kind = CfsStatusWorking};
+void cfs_ui_show_working(
+    CfsApp* app,
+    const char* title,
+    const char* text,
+    const CfsTagData* color,
+    bool winding) {
+    CfsStatusModel status = {.kind = CfsStatusWorking, .winding = winding};
     snprintf(status.title, sizeof(status.title), "%s", title);
     snprintf(status.text, sizeof(status.text), "%s", text);
     if(color) {

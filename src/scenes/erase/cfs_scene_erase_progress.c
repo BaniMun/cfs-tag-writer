@@ -2,7 +2,7 @@
 #include "src/core/cfs_ui.h"
 
 static void cfs_erase_start(CfsApp* app) {
-    cfs_ui_show_working(app, "Erasing", "Hold the tag to\nthe back of\nyour Flipper", NULL);
+    cfs_ui_show_working(app, "Erasing", "Hold the tag to\nthe back of\nyour Flipper", NULL, false);
     cfs_nfc_worker_start_erase(app->worker);
 }
 

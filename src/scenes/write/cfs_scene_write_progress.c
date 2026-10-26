@@ -15,7 +15,7 @@ static void cfs_progress_prompt(CfsApp* app) {
         snprintf(title, sizeof(title), "Writing tag");
     }
     cfs_ui_show_working(
-        app, title, "Hold the tag to\nthe back of\nyour Flipper", cfs_progress_color(app));
+        app, title, "Hold the tag to\nthe back of\nyour Flipper", cfs_progress_color(app), true);
     if(app->write_exact) {
         // Clone: write the captured plaintext byte-for-byte (blocks 4-6 exact).
         cfs_nfc_worker_start_write_raw(app->worker, app->tag_plain);

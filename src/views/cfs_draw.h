@@ -22,6 +22,7 @@ typedef struct {
     size_t count;
     size_t selected;
     size_t window; // first visible item
+    uint8_t angle; // logo spool rotation, 0..CFS_SPOOL_STEPS-1
 } CfsMenuModel;
 
 void cfs_draw_menu(Canvas* canvas, const CfsMenuModel* m);
@@ -38,6 +39,7 @@ typedef struct {
     size_t count;
     size_t selected;
     uint8_t r, g, b; // color shown on the spool (hex page: the pending color)
+    uint8_t angle; // spool rotation, 0..CFS_SPOOL_STEPS-1
 } CfsPickerModel;
 
 void cfs_draw_color_picker(Canvas* canvas, const CfsPickerModel* m);
@@ -67,6 +69,7 @@ typedef struct {
     char title[24];
     char text[64]; // up to 3 lines, '\n' separated
     uint8_t frame; // animation frame while working
+    bool winding; // working spool winds up filament (write) instead of just turning
     bool has_color; // draw the spool in this color (else an outline spool)
     uint8_t r, g, b;
     const char* button_center; // NULL = none
@@ -75,5 +78,16 @@ typedef struct {
 void cfs_draw_status(Canvas* canvas, const CfsStatusModel* m);
 
 // Building blocks, shared by the screens above.
+#define CFS_SPOOL_STEPS (12)
+void cfs_draw_spool_anim(
+    Canvas* canvas,
+    int32_t cx,
+    int32_t cy,
+    int32_t radius,
+    uint8_t r,
+    uint8_t g,
+    uint8_t b,
+    uint8_t angle,
+    uint8_t fill);
 void cfs_draw_spool(Canvas* canvas, int32_t cx, int32_t cy, int32_t radius, uint8_t r, uint8_t g, uint8_t b);
 void cfs_draw_str_fit(Canvas* canvas, int32_t x, int32_t y, int32_t max_width, const char* str);

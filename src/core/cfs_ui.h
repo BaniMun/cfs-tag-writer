@@ -17,8 +17,14 @@ void cfs_ui_fill_card(const CfsTagData* data, size_t weight_index, CfsCardModel*
 void cfs_ui_material_name(const CfsTagData* data, char* out, size_t out_size);
 
 // "Hold the tag" screen while the NFC worker runs. A NULL color draws an
-// empty spool (read, erase).
-void cfs_ui_show_working(CfsApp* app, const char* title, const char* text, const CfsTagData* color);
+// empty spool (read, erase); winding makes the spool wind up filament (write)
+// instead of just turning.
+void cfs_ui_show_working(
+    CfsApp* app,
+    const char* title,
+    const char* text,
+    const CfsTagData* color,
+    bool winding);
 
 // Finished operation: success buzzes, shows a check and returns to the start
 // menu after a moment (CfsCustomEventScreenDone); failure buzzes, shows a

@@ -1,3 +1,10 @@
+## v1.3.0
+
+- The spool moves: it winds up filament while a tag is being written, turns
+  while reading and erasing, turns slowly in the main menu, and makes a short
+  turn in the color picker after each move (in the direction you scroll).
+- The spool hub now has three spokes, which is what shows it turning.
+
 ## v1.2.0
 
 - New look: the app's main screens are drawn by the app itself instead of
